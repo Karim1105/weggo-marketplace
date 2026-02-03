@@ -9,11 +9,11 @@ async function handler(request: NextRequest, user: any) {
   if (request.method === 'GET') {
     const me = await User.findById(user._id)
       .populate('blockedUsers', 'name email avatar')
-      .lean()
+      .lean() as { blockedUsers?: unknown[] } | null
 
     return NextResponse.json({
       success: true,
-      blockedUsers: me?.blockedUsers || [],
+      blockedUsers: me?.blockedUsers ?? [],
     })
   }
 
