@@ -186,8 +186,8 @@ const MOCK_RATINGS: Rating[] = [
   }
 ]
 
-// Calculate weighted seller rating
-export function calculateSellerRating(sellerId: string): SellerStats {
+// Calculate weighted seller rating (legacy)
+export function calculateSellerRatingLegacy(sellerId: string): SellerStats {
   const sellerRatings = MOCK_RATINGS.filter(r => r.sellerId === sellerId)
   
   if (sellerRatings.length === 0) {
@@ -319,7 +319,7 @@ export function getSellerPerformance(sellerId: string): {
     salesTrend: 'up' | 'down' | 'stable'
   }
 } {
-  const rating = calculateSellerRating(sellerId)
+  const rating = calculateSellerRatingLegacy(sellerId)
   const breakdown = getRatingBreakdown(sellerId)
   const recentReviews = getRecentReviews(sellerId, 3)
   
@@ -342,7 +342,7 @@ export function searchSellersByRating(minRating: number = 4.0): SellerStats[] {
   const allSellers = [...new Set(MOCK_RATINGS.map(r => r.sellerId))]
   
   return allSellers
-    .map(sellerId => calculateSellerRating(sellerId))
+    .map(sellerId => calculateSellerRatingLegacy(sellerId))
     .filter(seller => seller.averageRating >= minRating)
     .sort((a, b) => b.averageRating - a.averageRating)
 }
@@ -352,7 +352,7 @@ export function getTopRatedSellers(limit: number = 10): SellerStats[] {
   const allSellers = [...new Set(MOCK_RATINGS.map(r => r.sellerId))]
   
   return allSellers
-    .map(sellerId => calculateSellerRating(sellerId))
+    .map(sellerId => calculateSellerRatingLegacy(sellerId))
     .filter(seller => seller.totalRatings >= 3) // At least 3 ratings
     .sort((a, b) => b.averageRating - a.averageRating)
     .slice(0, limit)
@@ -360,7 +360,7 @@ export function getTopRatedSellers(limit: number = 10): SellerStats[] {
 
 // Calculate trust score for a seller
 export function calculateTrustScore(sellerId: string): number {
-  const stats = calculateSellerRating(sellerId)
+  const stats = calculateSellerRatingLegacy(sellerId)
   
   if (stats.totalRatings === 0) return 0
   
@@ -381,7 +381,7 @@ export function calculateTrustScore(sellerId: string): number {
 // Get seller badge based on performance
 export function getSellerBadge(sellerId: string): string {
   const trustScore = calculateTrustScore(sellerId)
-  const stats = calculateSellerRating(sellerId)
+  const stats = calculateSellerRatingLegacy(sellerId)
   
   if (trustScore >= 90 && stats.verified) {
     return '🏆 Top Seller'
@@ -430,5 +430,3 @@ export function getRatingAnalytics(): {
 }
 
 export { MOCK_RATINGS }
-
-
