@@ -91,4 +91,68 @@ export async function DELETE(
   }
 }
 
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const user = await getAuthUser(request)
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    await connectDB()
+    const product = await Product.findById(params.id)
+
+    if (!product || product.status === 'deleted') {
+      return NextResponse.json(
+        { success: false, error: 'Product not found' },
+        { status: 404 }
+      )
+    }
+
+    if (product.seller.toString() !== user._id.toString() && user.role !== 'admin') {
+      return NextResponse.json(
+        { success: false, error: 'Forbidden' },
+        { status: 403 }
+      )
+    }
+
+    const body = await request.json()
+    const {
+      title,
+      description,
+      price,
+      category,
+      subcategory,
+      condition,
+      location,
+    } = body
+
+    if (title !== undefined) product.title = title
+    if (description !== undefined) product.description = description
+    if (price !== undefined) product.price = price
+    if (category !== undefined) product.category = category
+    if (subcategory !== undefined) product.subcategory = subcategory || undefined
+    if (condition !== undefined) product.condition = condition
+    if (location !== undefined) product.location = location
+
+    await product.save()
+
+    return NextResponse.json({
+      success: true,
+      listing: product,
+      message: 'Product updated successfully',
+    })
+  } catch (error: any) {
+    return NextResponse.json(
+      { success: false, error: error.message || 'Failed to update product' },
+      { status: 500 }
+    )
+  }
+}
+
 

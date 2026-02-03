@@ -181,6 +181,7 @@ export function mapApiListingToProduct(
     location: string
     condition: string
     category: string
+    subcategory?: string
     images?: string[]
     createdAt: string
     seller?: { name?: string; isVerified?: boolean; rating?: number; totalSales?: number }
@@ -195,6 +196,8 @@ export function mapApiListingToProduct(
     condition: listing.condition,
     image: listingImageUrl(listing.images?.[0]),
     category: listing.category,
+    // Keep subcategory available for client-side filtering, even if not always used in UI
+    subcategory: listing.subcategory,
     postedAt: formatDate(listing.createdAt),
     isFavorite: favoriteIds.has(listing._id),
     seller: listing.seller

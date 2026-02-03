@@ -8,6 +8,7 @@ import Categories from '@/components/Categories'
 import FeaturedListings from '@/components/FeaturedListings'
 import HowItWorks from '@/components/HowItWorks'
 import Footer from '@/components/Footer'
+import RecentlyViewed from '@/components/RecentlyViewed'
 
 export default function Home() {
   const [isClient, setIsClient] = useState(false)
@@ -35,6 +36,7 @@ export default function Home() {
       {/* Seamless sections - no individual gradients */}
       <Categories />
       <PersonalizedFeed />
+      <RecentlyViewed />
       <FeaturedListings />
       <HowItWorks />
       

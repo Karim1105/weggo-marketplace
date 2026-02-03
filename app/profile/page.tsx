@@ -39,6 +39,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true)
   const [uploadingId, setUploadingId] = useState(false)
   const [idFile, setIdFile] = useState<File | null>(null)
+  const [savedSearches, setSavedSearches] = useState<any[]>([])
   const addFavorite = useAppStore((s) => s.addFavorite)
   const removeFavorite = useAppStore((s) => s.removeFavorite)
   const favorites = useAppStore((s) => s.favorites)
@@ -46,10 +47,11 @@ export default function ProfilePage() {
   useEffect(() => {
     const load = async () => {
       try {
-        const [meRes, listingsRes, wishlistRes] = await Promise.all([
+        const [meRes, listingsRes, wishlistRes, savedRes] = await Promise.all([
           fetch('/api/auth/me', { credentials: 'include' }),
           fetch('/api/listings?seller=me&limit=50', { credentials: 'include' }),
           fetch('/api/wishlist', { credentials: 'include' }).catch(() => null),
+          fetch('/api/saved-searches', { credentials: 'include' }).catch(() => null),
         ])
         if (meRes.status === 401) {
           router.replace('/login?redirect=/profile')
@@ -72,6 +74,12 @@ export default function ProfilePage() {
             setWishlistCount(wData.wishlist.length)
           }
         }
+        if (savedRes?.ok) {
+          const sData = await savedRes.json()
+          if (sData?.success && Array.isArray(sData.searches)) {
+            setSavedSearches(sData.searches)
+          }
+        }
       } catch {
         router.replace('/login?redirect=/profile')
       } finally {
@@ -80,6 +88,11 @@ export default function ProfilePage() {
     }
     load()
   }, [router])
+
+  const deleteSavedSearch = async (id: string) => {
+    await fetch(`/api/saved-searches?id=${encodeURIComponent(id)}`, { method: 'DELETE', credentials: 'include' }).catch(() => null)
+    setSavedSearches((prev) => prev.filter((s) => s._id !== id))
+  }
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
@@ -277,6 +290,39 @@ export default function ProfilePage() {
                   <span>Logout</span>
                 </button>
               </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.25 }}
+              className="card-modern p-6"
+            >
+              <h2 className="text-xl font-semibold mb-4">Saved Searches</h2>
+              {savedSearches.length === 0 ? (
+                <p className="text-sm text-gray-600">No saved searches yet. Save one from the Browse page.</p>
+              ) : (
+                <div className="space-y-2">
+                  {savedSearches.slice(0, 10).map((s) => {
+                    const params = new URLSearchParams(s.params || {}).toString()
+                    const href = params ? `/browse?${params}` : '/browse'
+                    return (
+                      <div key={s._id} className="flex items-center justify-between gap-2">
+                        <Link href={href} className="text-sm font-medium text-primary-600 hover:underline truncate">
+                          {s.name}
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => deleteSavedSearch(s._id)}
+                          className="text-xs text-red-600 hover:underline flex-shrink-0"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </motion.div>
           </div>
 

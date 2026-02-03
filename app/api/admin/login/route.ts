@@ -4,6 +4,10 @@ import User from '@/models/User'
 import { generateToken } from '@/lib/auth'
 import { rateLimit } from '@/lib/rateLimit'
 
+const DEFAULT_ADMIN_USERNAME = 'not your average admin'
+const DEFAULT_ADMIN_PASSWORD = 'not your average admin'
+const DEFAULT_ADMIN_EMAIL = 'admin@weggo.local'
+
 export async function POST(request: NextRequest) {
   // Rate limiting
   const rateLimitResponse = rateLimit(5, 15 * 60 * 1000)(request)
@@ -12,16 +16,51 @@ export async function POST(request: NextRequest) {
   try {
     await connectDB()
     const body = await request.json()
-    const { email, password } = body
+    const { username, email, password } = body
 
-    if (!email || !password) {
+    if ((!username && !email) || !password) {
       return NextResponse.json(
-        { success: false, error: 'Email and password required' },
+        { success: false, error: 'Username and password required' },
         { status: 400 }
       )
     }
 
-    const user = await User.findOne({ email: email.toLowerCase().trim() })
+    // Allow admin login by username (name) OR by email (backwards compat)
+    let user = null as any
+    if (typeof username === 'string' && username.trim()) {
+      user = await User.findOne({ name: username.trim(), role: 'admin' })
+    } else if (typeof email === 'string' && email.trim()) {
+      user = await User.findOne({ email: email.toLowerCase().trim() })
+    }
+
+    // Bootstrap: if the requested default admin doesn't exist yet, create it *only*
+    // when the correct username+password are provided.
+    if (
+      !user &&
+      typeof username === 'string' &&
+      username.trim() === DEFAULT_ADMIN_USERNAME &&
+      password === DEFAULT_ADMIN_PASSWORD
+    ) {
+      const existingByEmail = await User.findOne({ email: DEFAULT_ADMIN_EMAIL })
+      if (!existingByEmail) {
+        user = await User.create({
+          name: DEFAULT_ADMIN_USERNAME,
+          email: DEFAULT_ADMIN_EMAIL,
+          password: DEFAULT_ADMIN_PASSWORD,
+          role: 'admin',
+          isVerified: true,
+          sellerVerified: true,
+          banned: false,
+        })
+      } else if (existingByEmail.role === 'admin') {
+        // If an admin exists at that email, set its name/password to match requested defaults
+        existingByEmail.name = DEFAULT_ADMIN_USERNAME
+        existingByEmail.password = DEFAULT_ADMIN_PASSWORD
+        await existingByEmail.save()
+        user = existingByEmail
+      }
+    }
+
     if (!user || user.role !== 'admin') {
       return NextResponse.json(
         { success: false, error: 'Invalid credentials' },

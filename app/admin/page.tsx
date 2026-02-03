@@ -18,7 +18,7 @@ interface AdminUser {
 }
 
 export default function AdminPage() {
-  const [email, setEmail] = useState('')
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -33,7 +33,7 @@ export default function AdminPage() {
 
   const checkAuth = async () => {
     try {
-      const res = await fetch('/api/auth/me')
+      const res = await fetch('/api/auth/me', { credentials: 'include' })
       const data = await res.json()
       if (data.success && data.user?.role === 'admin') {
         setIsAuthenticated(true)
@@ -53,7 +53,8 @@ export default function AdminPage() {
       const res = await fetch('/api/admin/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        credentials: 'include',
+        body: JSON.stringify({ username, password }),
       })
 
       const data = await res.json()
@@ -119,14 +120,14 @@ export default function AdminPage() {
           <form onSubmit={handleLogin} className="space-y-6" noValidate>
             <div>
               <label className="block text-white/80 text-sm font-medium mb-2">
-                Admin email
+                Admin username
               </label>
               <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                placeholder="Admin email"
+                placeholder="Admin username"
                 autoComplete="off"
                 required
               />

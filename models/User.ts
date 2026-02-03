@@ -15,6 +15,7 @@ export interface IUser extends Document {
   banned: boolean
   resetPasswordToken?: string
   resetPasswordExpires?: Date
+  blockedUsers?: mongoose.Types.ObjectId[]
   createdAt: Date
   updatedAt: Date
   comparePassword(candidatePassword: string): Promise<boolean>
@@ -64,6 +65,7 @@ const UserSchema = new Schema<IUser>(
     banned: { type: Boolean, default: false },
     resetPasswordToken: { type: String },
     resetPasswordExpires: { type: Date },
+    blockedUsers: [{ type: Schema.Types.ObjectId, ref: 'User' }],
   },
   {
     timestamps: true,

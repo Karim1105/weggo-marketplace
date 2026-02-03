@@ -16,6 +16,8 @@ import {
   Star,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import ProductCard from '@/components/ProductCard'
+import { mapApiListingToProduct } from '@/lib/utils'
 
 interface Seller {
   _id: string
@@ -54,10 +56,28 @@ export default function ListingDetailPage() {
   const [showReportModal, setShowReportModal] = useState(false)
   const [reportReason, setReportReason] = useState('')
   const [isFavorite, setIsFavorite] = useState(false)
+  const [currentUser, setCurrentUser] = useState<{ _id: string; role?: string } | null>(null)
+  const [similar, setSimilar] = useState<any[]>([])
 
   useEffect(() => {
     fetchListing()
   }, [id])
+
+  useEffect(() => {
+    if (!listing) return
+    const loadSimilar = async () => {
+      try {
+        const res = await fetch(`/api/listings?category=${encodeURIComponent(listing.category)}&limit=8`, { credentials: 'include' })
+        const data = await res.json()
+        if (data.success && Array.isArray(data.listings)) {
+          setSimilar(data.listings.filter((p: any) => p._id !== listing._id).slice(0, 4))
+        }
+      } catch {
+        setSimilar([])
+      }
+    }
+    loadSimilar()
+  }, [listing])
 
   useEffect(() => {
     if (!listing) return
@@ -71,6 +91,21 @@ export default function ListingDetailPage() {
       })
       .catch(() => {})
   }, [listing, id])
+
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const res = await fetch('/api/auth/me', { credentials: 'include' })
+        const data = await res.json()
+        if (data.success && data.user) {
+          setCurrentUser({ _id: data.user.id || data.user._id, role: data.user.role })
+        }
+      } catch {
+        setCurrentUser(null)
+      }
+    }
+    loadUser()
+  }, [])
 
   const fetchListing = async () => {
     try {
@@ -116,6 +151,9 @@ export default function ListingDetailPage() {
       if (data.success) {
         toast.success('Message sent!')
         setMessageText('')
+        if (data.message?.conversationId) {
+          router.push(`/messages/${encodeURIComponent(data.message.conversationId)}`)
+        }
       } else {
         toast.error(data.error || 'Failed to send message')
       }
@@ -169,6 +207,30 @@ export default function ListingDetailPage() {
       setIsFavorite(!isFavorite)
     } catch {
       toast.error('Please log in to save favorites')
+    }
+  }
+
+  const canManageListing =
+    currentUser && listing && (currentUser._id === listing.seller._id || currentUser.role === 'admin')
+
+  const handleDelete = async () => {
+    if (!listing || !canManageListing) return
+    if (!window.confirm('Are you sure you want to delete this listing?')) return
+    try {
+      const res = await fetch(`/api/listings/${listing._id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      })
+      const data = await res.json()
+      if (!data.success) {
+        toast.error(data.error || 'Failed to delete listing')
+        return
+      }
+      toast.success('Listing deleted')
+      router.push('/profile')
+      router.refresh()
+    } catch {
+      toast.error('Failed to delete listing')
     }
   }
 
@@ -276,6 +338,23 @@ export default function ListingDetailPage() {
                   >
                     <Flag className="w-5 h-5 text-gray-600" />
                   </button>
+                  {canManageListing && (
+                    <>
+                      <Link
+                        href={`/listings/${listing._id}/edit`}
+                        className="px-3 py-1.5 rounded-full border border-gray-300 text-sm font-medium hover:bg-gray-100"
+                      >
+                        Edit
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={handleDelete}
+                        className="px-3 py-1.5 rounded-full border border-red-300 text-sm font-medium text-red-600 hover:bg-red-50"
+                      >
+                        Delete
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -341,6 +420,25 @@ export default function ListingDetailPage() {
             </div>
           </div>
         </div>
+
+        {similar.length > 0 && (
+          <div className="mt-10">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Similar items</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {similar.map((p: any, index: number) => {
+                const card = mapApiListingToProduct(p, new Set())
+                return (
+                  <ProductCard
+                    key={card.id}
+                    product={card as any}
+                    index={index}
+                    onToggleFavorite={() => {}}
+                  />
+                )
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Report modal */}

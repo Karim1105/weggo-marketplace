@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import connectDB from '@/lib/db'
 import Message from '@/models/Message'
+import User from '@/models/User'
 import { requireAuth } from '@/lib/auth'
 
 async function handler(request: NextRequest, user: any) {
@@ -85,6 +86,58 @@ async function handler(request: NextRequest, user: any) {
       )
     }
 
+    // Basic validation / anti-spam
+    if (typeof content !== 'string' || content.trim().length < 1 || content.trim().length > 2000) {
+      return NextResponse.json(
+        { success: false, error: 'Message must be between 1 and 2000 characters' },
+        { status: 400 }
+      )
+    }
+
+    // Blocking checks (both directions)
+    const [me, other] = await Promise.all([
+      User.findById(user._id).select('blockedUsers').lean(),
+      User.findById(receiverId).select('blockedUsers banned').lean(),
+    ])
+
+    if (!other) {
+      return NextResponse.json(
+        { success: false, error: 'Receiver not found' },
+        { status: 404 }
+      )
+    }
+
+    if ((other as any).banned) {
+      return NextResponse.json(
+        { success: false, error: 'User is not available' },
+        { status: 403 }
+      )
+    }
+
+    const myBlocked = new Set(((me as any)?.blockedUsers || []).map((id: any) => id.toString()))
+    const theirBlocked = new Set(((other as any)?.blockedUsers || []).map((id: any) => id.toString()))
+    if (myBlocked.has(receiverId.toString()) || theirBlocked.has(user._id.toString())) {
+      return NextResponse.json(
+        { success: false, error: 'You cannot message this user' },
+        { status: 403 }
+      )
+    }
+
+    // Prevent repeated identical messages within a short window
+    const recentDuplicate = await Message.findOne({
+      sender: user._id,
+      receiver: receiverId,
+      product: productId || { $exists: false },
+      content: content.trim(),
+      createdAt: { $gte: new Date(Date.now() - 30 * 1000) },
+    }).lean()
+    if (recentDuplicate) {
+      return NextResponse.json(
+        { success: false, error: 'Please wait a moment before sending the same message again.' },
+        { status: 429 }
+      )
+    }
+
     // Generate conversation ID (sorted to ensure consistency)
     const userIds = [user._id.toString(), receiverId].sort()
     const conversationId = `${userIds[0]}_${userIds[1]}${productId ? `_${productId}` : ''}`
@@ -94,7 +147,7 @@ async function handler(request: NextRequest, user: any) {
       sender: user._id,
       receiver: receiverId,
       product: productId,
-      content,
+      content: content.trim(),
     })
 
     await message.populate([

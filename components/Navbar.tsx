@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Menu, X, Search, Heart, User, Plus, Globe, LogIn, LogOut } from 'lucide-react'
+import { Menu, X, Search, Heart, User, Plus, Globe, LogIn, LogOut, MessageCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 export default function Navbar() {
@@ -13,7 +13,9 @@ export default function Navbar() {
   const [searchQuery, setSearchQuery] = useState('')
   const [isArabic, setIsArabic] = useState(false)
   const [user, setUser] = useState<any>(null)
+  const [unreadMessages, setUnreadMessages] = useState(0)
   const router = useRouter()
+  const pathname = usePathname()
 
   useEffect(() => {
     const handleScroll = () => {
@@ -23,26 +25,47 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
+  // Re-check auth on navigation so login shows immediately (no manual refresh).
   useEffect(() => {
     checkAuth()
-  }, [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname])
 
   const checkAuth = async () => {
     try {
-      const res = await fetch('/api/auth/me')
+      const res = await fetch('/api/auth/me', { credentials: 'include' })
       const data = await res.json()
       if (data.success) {
         setUser(data.user)
+        try {
+          const res = await fetch('/api/messages', { credentials: 'include' })
+          const msgData = await res.json()
+          if (msgData.success && Array.isArray(msgData.conversations)) {
+            const totalUnread = msgData.conversations.reduce(
+              (sum: number, c: { unreadCount?: number }) => sum + (c.unreadCount || 0),
+              0
+            )
+            setUnreadMessages(totalUnread)
+          }
+        } catch {
+          setUnreadMessages(0)
+        }
+      } else {
+        setUser(null)
+        setUnreadMessages(0)
       }
     } catch (error) {
       // Not authenticated
+      setUser(null)
+      setUnreadMessages(0)
     }
   }
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' })
+      await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
       setUser(null)
+      setUnreadMessages(0)
       toast.success('Logged out successfully')
       router.push('/')
       router.refresh()
@@ -127,6 +150,18 @@ export default function Navbar() {
                  >
                    <Plus className="w-5 h-5 group-hover:scale-110 transition-transform" />
                    <span>{isArabic ? 'بيع' : 'Sell'}</span>
+                 </Link>
+
+                 <Link
+                   href="/messages"
+                   className="p-2.5 hover:bg-gray-100 rounded-full transition-colors relative"
+                 >
+                   <MessageCircle className="w-6 h-6 text-gray-700" />
+                   {unreadMessages > 0 && (
+                     <span className="absolute -top-1 -right-1 px-1.5 py-0.5 rounded-full bg-red-500 text-white text-[10px] font-semibold">
+                       {unreadMessages > 9 ? '9+' : unreadMessages}
+                     </span>
+                   )}
                  </Link>
 
                  <Link

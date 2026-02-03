@@ -7,6 +7,7 @@ import { Search, Filter, Grid, List, Package, Heart, MapPin, Clock } from 'lucid
 import ProductCard from '@/components/ProductCard'
 import { mapApiListingToProduct, categories as apiCategories, subcategoriesByCategory } from '@/lib/utils'
 import { useAppStore } from '@/lib/store'
+import toast from 'react-hot-toast'
 
 interface Product {
   id: string
@@ -16,6 +17,7 @@ interface Product {
   condition: string
   image: string
   category: string
+  subcategory?: string
   postedAt: string
   isFavorite: boolean
   seller?: {
@@ -35,6 +37,9 @@ export default function BrowsePage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>('all')
+  const [locationFilter, setLocationFilter] = useState('')
+  const [nearMeEnabled, setNearMeEnabled] = useState(false)
+  const [verifiedOnly, setVerifiedOnly] = useState(false)
   const [priceRange, setPriceRange] = useState([0, 1000000])
   const [sortBy, setSortBy] = useState('newest')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
@@ -49,8 +54,10 @@ export default function BrowsePage() {
   useEffect(() => {
     const cat = searchParams.get('category') || 'all'
     const sub = searchParams.get('subcategory') || 'all'
+    const loc = searchParams.get('location') || ''
     setSelectedCategory(cat)
     setSelectedSubcategory(sub)
+    setLocationFilter(loc)
   }, [searchParams])
 
   const categories = useMemo(() => ['all', ...apiCategories.map((c) => c.id)], [])
@@ -108,6 +115,7 @@ export default function BrowsePage() {
       if (selectedCategory !== 'all') params.set('category', selectedCategory)
       if (selectedSubcategory !== 'all') params.set('subcategory', selectedSubcategory)
       if (searchQuery.trim()) params.set('search', searchQuery.trim())
+      if (locationFilter.trim()) params.set('location', locationFilter.trim())
       params.set('minPrice', String(priceRange[0]))
       params.set('maxPrice', String(priceRange[1]))
       params.set('sortBy', sortBy)
@@ -137,7 +145,7 @@ export default function BrowsePage() {
     } finally {
       setLoading(false)
     }
-  }, [selectedCategory, selectedSubcategory, searchQuery, priceRange, sortBy, page, storeFavorites])
+  }, [selectedCategory, selectedSubcategory, searchQuery, locationFilter, priceRange, sortBy, page, storeFavorites])
 
   useEffect(() => {
     fetchWishlist()
@@ -179,7 +187,76 @@ export default function BrowsePage() {
     }
   }
 
-  const displayedProducts = products
+  const displayedProducts = useMemo(
+    () =>
+      products.filter((product) => {
+        if (selectedCategory !== 'all' && product.category !== selectedCategory) {
+          return false
+        }
+        if (
+          selectedSubcategory !== 'all' &&
+          product.subcategory &&
+          product.subcategory !== selectedSubcategory
+        ) {
+          return false
+        }
+        if (verifiedOnly && !product.seller?.verified) {
+          return false
+        }
+        return true
+      }),
+    [products, selectedCategory, selectedSubcategory, verifiedOnly]
+  )
+
+  const applyNearMe = async () => {
+    try {
+      const res = await fetch('/api/auth/me', { credentials: 'include' })
+      const data = await res.json()
+      const loc = data?.user?.location
+      if (data.success && loc) {
+        setNearMeEnabled(true)
+        setLocationFilter(loc)
+        return
+      }
+    } catch {
+      // ignore
+    }
+    setNearMeEnabled(false)
+  }
+
+  const saveCurrentSearch = async () => {
+    const name = window.prompt('Name this saved search (e.g., "iPhones in Cairo")')
+    if (!name) return
+    const params: Record<string, string> = {}
+    if (selectedCategory !== 'all') params.category = selectedCategory
+    if (selectedSubcategory !== 'all') params.subcategory = selectedSubcategory
+    if (searchQuery.trim()) params.search = searchQuery.trim()
+    if (locationFilter.trim()) params.location = locationFilter.trim()
+    params.minPrice = String(priceRange[0])
+    params.maxPrice = String(priceRange[1])
+    params.sortBy = sortBy
+    try {
+      const res = await fetch('/api/saved-searches', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ name, params }),
+      })
+      if (res.status === 401) {
+        toast.error('Please log in to save searches')
+        router.push('/login?redirect=/browse')
+        return
+      }
+      const data = await res.json()
+      if (data.success) {
+        toast.success('Saved search')
+      } else {
+        toast.error(data.error || 'Failed to save')
+      }
+    } catch {
+      toast.error('Failed to save')
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40">
@@ -244,6 +321,14 @@ export default function BrowsePage() {
                   <List className="w-4 h-4" />
                 </button>
               </div>
+
+              <button
+                type="button"
+                onClick={saveCurrentSearch}
+                className="px-4 py-2 border border-gray-200 rounded-full hover:bg-gray-50 transition-colors"
+              >
+                Save search
+              </button>
             </div>
           </div>
 
@@ -338,14 +423,47 @@ export default function BrowsePage() {
                   </div>
                 </div>
 
+                {/* Location */}
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-3">Location</h3>
+                  <input
+                    type="text"
+                    value={locationFilter}
+                    onChange={(e) => {
+                      setLocationFilter(e.target.value)
+                      setNearMeEnabled(false)
+                    }}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    placeholder="e.g. Cairo"
+                  />
+                  <p className="text-xs text-gray-500 mt-2">
+                    Tip: use “Near Me” if your profile has a location.
+                  </p>
+                </div>
+
                 {/* Quick Filters */}
                 <div>
                   <h3 className="font-semibold text-gray-900 mb-3">Quick Filters</h3>
                   <div className="space-y-2">
-                    <button className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                    <button
+                      type="button"
+                      onClick={() => setVerifiedOnly((v) => !v)}
+                      className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
                       Verified Sellers Only
                     </button>
-                    <button className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (nearMeEnabled) {
+                          setNearMeEnabled(false)
+                          setLocationFilter('')
+                        } else {
+                          applyNearMe()
+                        }
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
                       Near Me
                     </button>
                     <button className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
