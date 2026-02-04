@@ -52,8 +52,11 @@ export default function UploadIdPage() {
       const formData = new FormData()
       formData.append('id', file)
 
+      const headers = withCsrfHeader({}) as Record<string, string>
+
       const res = await fetch('/api/auth/upload-id', {
         method: 'POST',
+        headers: headers,
         body: formData,
         credentials: 'include',
       })
