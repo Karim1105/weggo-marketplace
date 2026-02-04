@@ -48,7 +48,7 @@ export default function FeaturedListings() {
         fetch('/api/wishlist', { credentials: 'include' }).catch(() => null),
       ])
       const data = await listingsRes.json()
-      const ids = new Set<string>(storeFavorites)
+      const ids = new Set<string>()
       if (wishlistRes) {
         const wData = await wishlistRes.json()
         if (wData?.success && Array.isArray(wData.wishlist)) {
@@ -64,11 +64,11 @@ export default function FeaturedListings() {
     } catch {
       setProducts([])
     }
-  }, [storeFavorites])
+  }, [])
 
   useEffect(() => {
     fetchFeatured()
-  }, [fetchFeatured])
+  }, [])
 
   const toggleFavorite = (id: string) => {
     const product = products.find((p) => p.id === id)

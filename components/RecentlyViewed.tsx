@@ -50,7 +50,7 @@ export default function RecentlyViewed() {
         return
       }
 
-      const ids = new Set<string>(storeFavorites)
+      const ids = new Set<string>()
       if (wishlistRes?.ok) {
         const wData = await wishlistRes.json()
         if (wData?.success && Array.isArray(wData.wishlist)) {
@@ -64,11 +64,11 @@ export default function RecentlyViewed() {
     } finally {
       setLoading(false)
     }
-  }, [storeFavorites])
+  }, [])
 
   useEffect(() => {
     fetchData()
-  }, [fetchData])
+  }, [])
 
   const toggleFavorite = (id: string) => {
     const isFav = storeFavorites.includes(id)

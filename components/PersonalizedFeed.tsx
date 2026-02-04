@@ -46,7 +46,7 @@ export default function PersonalizedFeed() {
         fetch(`/api/listings?${params}`, { credentials: 'include' }),
         fetch('/api/wishlist', { credentials: 'include' }).catch(() => null),
       ])
-      const ids = new Set<string>(storeFavorites)
+      const ids = new Set<string>()
       const listingsData = await listingsRes.json()
       const rawListings = listingsData.data?.listings ?? listingsData.listings
       let listings: any[] = listingsData.success && Array.isArray(rawListings) ? rawListings : []
@@ -63,11 +63,11 @@ export default function PersonalizedFeed() {
     } finally {
       setIsLoading(false)
     }
-  }, [storeFavorites])
+  }, [])
 
   useEffect(() => {
     fetchFeed()
-  }, [fetchFeed])
+  }, [])
 
   const toggleFavorite = (id: string) => {
     const product = products.find((p) => p.id === id)
