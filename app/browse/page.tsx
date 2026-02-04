@@ -544,6 +544,7 @@ function BrowsePageInner() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
+                layout="position"
               >
                 <ProductCard
                   product={product}
@@ -561,6 +562,7 @@ function BrowsePageInner() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.05 }}
+                layout="position"
                 className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow"
               >
                 <div className="flex space-x-4">

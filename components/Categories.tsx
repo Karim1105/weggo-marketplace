@@ -65,10 +65,10 @@ export default function Categories() {
   return (
     <section className="py-20 px-4 relative overflow-hidden">
       {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-5">
+      <div className="absolute inset-0 opacity-5 pointer-events-none">
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-primary-100 via-transparent to-secondary-100" />
-        <div className="absolute top-20 right-10 w-72 h-72 bg-accent-200 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-20 left-10 w-96 h-96 bg-primary-200 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-20 right-10 w-72 h-72 bg-accent-200 rounded-full blur-3xl animate-pulse will-change-auto" />
+        <div className="absolute bottom-20 left-10 w-96 h-96 bg-primary-200 rounded-full blur-3xl animate-pulse will-change-auto" style={{ animationDelay: '1s' }} />
       </div>
 
       <div className="max-w-7xl mx-auto relative">
@@ -76,6 +76,7 @@ export default function Categories() {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
+          layout="position"
           className="text-center mb-20"
         >
           <motion.div
@@ -186,6 +187,7 @@ export default function Categories() {
                   viewport={{ once: true }}
                   transition={{ delay: index * 0.05 }}
                   whileHover={{ scale: 1.05, y: -2 }}
+                  layout="position"
                   className="group cursor-pointer"
                 >
                   <div className="card-modern p-6 hover-lift h-full">
