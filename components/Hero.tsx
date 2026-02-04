@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import { Search, Sparkles, TrendingUp, Shield, Heart, MapPin, Star } from 'lucide-react'
 import Link from 'next/link'
 import { listingImageUrl } from '@/lib/utils'
+import { useUserVerification } from '@/lib/useUserVerification'
 
 interface FeaturedProduct {
   id: string
@@ -28,6 +29,7 @@ const FALLBACK_PRODUCTS: FeaturedProduct[] = [
 ]
 
 export default function Hero() {
+  const { handleVerificationFlow } = useUserVerification()
   const [featuredProducts, setFeaturedProducts] = useState<FeaturedProduct[]>(FALLBACK_PRODUCTS)
   const [favorites, setFavorites] = useState<string[]>([])
 
@@ -122,18 +124,17 @@ export default function Hero() {
                 </motion.span>
               </Link>
 
-              <Link href="/sell">
-                <motion.span
-                  whileHover={{ scale: 1.05, y: -2 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="group relative overflow-hidden flex items-center justify-center border-2 border-blue-500 text-blue-600 px-10 py-5 rounded-2xl font-bold text-lg hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-300 shadow-lg hover:shadow-xl bg-white/80 backdrop-blur-sm cursor-pointer inline-flex"
-                >
-                  <span className="relative z-10 flex items-center space-x-3">
-                    <Sparkles className="w-5 h-5" />
-                    <span>Sell Now</span>
-                  </span>
-                </motion.span>
-              </Link>
+              <motion.button
+                onClick={() => handleVerificationFlow('/sell')}
+                whileHover={{ scale: 1.05, y: -2 }}
+                whileTap={{ scale: 0.95 }}
+                className="group relative overflow-hidden flex items-center justify-center border-2 border-blue-500 text-blue-600 px-10 py-5 rounded-2xl font-bold text-lg hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-300 shadow-lg hover:shadow-xl bg-white/80 backdrop-blur-sm cursor-pointer inline-flex"
+              >
+                <span className="relative z-10 flex items-center space-x-3">
+                  <Sparkles className="w-5 h-5" />
+                  <span>Sell Now</span>
+                </span>
+              </motion.button>
             </div>
 
             {/* Features */}

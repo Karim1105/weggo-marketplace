@@ -7,6 +7,7 @@ import { Star, TrendingUp, Award } from 'lucide-react'
 import ProductCard from './ProductCard'
 import { mapApiListingToProduct } from '@/lib/utils'
 import { useAppStore } from '@/lib/store'
+import { useUserVerification } from '@/lib/useUserVerification'
 import toast from 'react-hot-toast'
 
 interface Product {
@@ -24,23 +25,15 @@ interface Product {
 
 export default function FeaturedListings() {
   const router = useRouter()
+  const { user, handleVerificationFlow } = useUserVerification()
   const [products, setProducts] = useState<Product[]>([])
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set())
   const storeFavorites = useAppStore((s) => s.favorites)
   const addFavorite = useAppStore((s) => s.addFavorite)
   const removeFavorite = useAppStore((s) => s.removeFavorite)
-  const user = useAppStore((s) => s.user)
 
-  const handleApplyNow = async () => {
-    // Check if user is logged in
-    if (!user) {
-      toast.error('Please log in to apply for featured seller status')
-      router.push('/login?redirect=/auth/upload-id')
-      return
-    }
-
-    // Redirect to ID upload
-    router.push('/auth/upload-id')
+  const handleApplyNow = () => {
+    handleVerificationFlow('/sell')
   }
 
   const handleLearnMore = () => {
