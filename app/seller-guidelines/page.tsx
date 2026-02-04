@@ -105,7 +105,7 @@ export default function SellerGuidelinesPage() {
                   Use specific, searchable titles like "iPhone 13 Pro 256GB Blue - Excellent Condition" instead of "Phone for sale"
                 </p>
                 <p className="text-green-600 text-xs italic">
-                  ✨ Benefit: Better search visibility and automatic listing boost
+                  Benefit: Better search visibility and automatic listing boost
                 </p>
               </div>
             </div>
@@ -118,7 +118,7 @@ export default function SellerGuidelinesPage() {
                   Upload clear, well-lit photos from multiple angles. Show any defects or wear honestly.
                 </p>
                 <p className="text-green-600 text-xs italic">
-                  ✨ Benefit: Higher buyer confidence and faster sales
+                  Benefit: Higher buyer confidence and faster sales
                 </p>
               </div>
             </div>
@@ -131,7 +131,7 @@ export default function SellerGuidelinesPage() {
                   Include brand, model, condition, size, color, any flaws, reason for selling, and what's included.
                 </p>
                 <p className="text-green-600 text-xs italic">
-                  ✨ Benefit: Fewer questions, faster decisions, automatic listing promotion
+                  Benefit: Fewer questions, faster decisions, automatic listing promotion
                 </p>
               </div>
             </div>
@@ -144,7 +144,7 @@ export default function SellerGuidelinesPage() {
                   Research similar items and price competitively. Be honest about condition when setting price.
                 </p>
                 <p className="text-green-600 text-xs italic">
-                  ✨ Benefit: Builds trust and increases your seller rating
+                  Benefit: Builds trust and increases your seller rating
                 </p>
               </div>
             </div>
@@ -157,7 +157,7 @@ export default function SellerGuidelinesPage() {
                   Reply to buyer questions quickly and honestly. Be professional and courteous.
                 </p>
                 <p className="text-green-600 text-xs italic">
-                  ✨ Benefit: Better reviews and potential featured seller status
+                  Benefit: Better reviews and potential featured seller status
                 </p>
               </div>
             </div>

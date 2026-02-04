@@ -1,6 +1,5 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import Hero from '@/components/Hero'
 import PersonalizedFeed from '@/components/PersonalizedFeed'
@@ -11,16 +10,6 @@ import Footer from '@/components/Footer'
 import RecentlyViewed from '@/components/RecentlyViewed'
 
 export default function Home() {
-  const [isClient, setIsClient] = useState(false)
-
-  useEffect(() => {
-    setIsClient(true)
-  }, [])
-
-  if (!isClient) {
-    return null
-  }
-
   return (
     <div className="relative">
       {/* Smooth Flowing Gradient Background */}
