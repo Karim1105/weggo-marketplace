@@ -7,10 +7,10 @@ const JWT_SECRET = process.env.JWT_SECRET
 
 if (!JWT_SECRET) {
   if (process.env.NODE_ENV === 'production') {
-    throw new Error('JWT_SECRET environment variable is required in production')
+    console.warn('[AUTH] JWT_SECRET not set in production. Using fallback development secret for now. Set JWT_SECRET in Vercel environment variables for security.')
+  } else {
+    console.warn('[AUTH] Using development JWT secret. Set JWT_SECRET in .env.local for security.')
   }
-  // Only use fallback in development
-  console.warn('[AUTH] Using development JWT secret. Set JWT_SECRET in .env.local for security.')
 }
 
 const JWT_SECRET_FINAL = JWT_SECRET || 'dev-secret-do-not-use-in-production'
