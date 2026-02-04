@@ -11,11 +11,11 @@ Look, the biggest problem with Egyptian marketplaces is fake listings and scams.
 
 The verification flow is already built in - there's a seller guidelines page explaining the rules, an ID upload page, and the whole thing integrates with the sell button and featured listings section. Users who are already verified just skip straight to posting their items.
 
-### AI Features That Actually Work
+### AI Features That Actually Work (minus the ai pricing system not functional yet)
 
 We built an AI chatbot that helps you find products and answers questions about the platform. It's not perfect but it's pretty helpful.
 
-The AI pricing system is honestly the coolest part - it scrapes OLX, Dubizzle, and Facebook Marketplace to analyze what similar items are selling for, then suggests a price range. You get a "quick sale" price and a "premium" price depending on how fast you want to sell.
+The AI pricing system is honestly the coolest part in theory it scrapes Dubizzle, and Facebook Marketplace to analyze what similar items are selling for, then suggests a price range. You get a "quick sale" price and a "premium" price depending on how fast you want to sell. the issue we are facing right now is that it is against the TOS of both platforms to scrape their websites you have to have a partner api which we are currently trying to get our hands on
 
 There's also a personalized feed that shows you products based on what you've been looking at. Nothing crazy, just basic recommendations.
 
