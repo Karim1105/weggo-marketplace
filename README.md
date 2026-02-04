@@ -2,7 +2,7 @@
 
 ## Your Way to Go Second Hand
 
-Weggo is a second-hand marketplace for Egypt that actually tries to solve the fake listing problem. We verify sellers with ID uploads and use AI to help with pricing and recommendations. Think OLX but without all the scammers.
+Weggo is a second-hand marketplace for Egypt that actually tries to solve the fake listing problem. We verify sellers with ID uploads and use AI to help with pricing and recommendations. Think facebook marketplace but without all the scammers.
 
 ## What Makes This Different
 
