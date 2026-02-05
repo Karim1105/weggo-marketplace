@@ -21,13 +21,13 @@ There's also a personalized feed that shows you products based on what you've be
 
 ### The Design
 
-We went with a modern look - lots of gradients, smooth animations with Framer Motion, and a responsive layout that works great on mobile and desktop. The mobile view got a full optimization pass recently so buttons, text sizes, and spacing all scale properly across devices.
+We went with a modern look - lots of gradients, smooth animations with Framer Motion, and a responsive layout that works great on desktop. The mobile view got a full optimization pass recently so buttons, text sizes, and spacing, doesn't mean it looks or feels good tho it is mid at best. so lower your expectations. 
 
 There's also Arabic language support with RTL layout switching, though the translation isn't fully implemented everywhere yet. It mainly just flips the layout for now.
 
 ### Egyptian Market Specific
 
-Everything's in Egyptian Pounds, all the major cities are pre-loaded, and the whole thing is designed around how people actually buy and sell stuff in Egypt. We're planning to integrate local payment methods like Fawry and Vodafone Cash down the line.
+Everything's in Egyptian Pounds, all the major cities are pre-loaded, and the whole thing is designed around how people actually buy and sell stuff in Egypt. We're not i repeat planning to integrate local payment methods like Fawry and Vodafone Cash EVER. 
 
 ## Tech Stack
 
