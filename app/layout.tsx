@@ -22,11 +22,11 @@ export default function RootLayout({
 }) {
   initializeEnv()
   return (
-    <html lang="en" dir="ltr">
-      <body className={`${inter.variable} ${cairo.variable} font-sans antialiased bg-gray-50`}>
+    <html lang="en" dir="ltr" className="overflow-x-hidden">
+      <body className={`${inter.variable} ${cairo.variable} font-sans antialiased bg-gray-50 overflow-x-hidden`}>
         <ErrorBoundary>
           <Navbar />
-          <main className="min-h-screen">
+          <main className="min-h-screen overflow-x-hidden">
             {children}
           </main>
           <AIChatbot />

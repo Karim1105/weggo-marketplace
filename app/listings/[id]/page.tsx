@@ -17,6 +17,8 @@ import {
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import ProductCard from '@/components/ProductCard'
+import ReviewSubmit from '@/components/ReviewSubmit'
+import ReviewsList from '@/components/ReviewsList'
 import { mapApiListingToProduct, withCsrfHeader } from '@/lib/utils'
 
 interface Seller {
@@ -443,6 +445,17 @@ export default function ListingDetailPage() {
                   {sendingMessage ? 'Sending...' : 'Contact seller'}
                 </motion.button>
               </form>
+
+              {/* Reviews Section */}
+              <div className="mt-10 border-t pt-10">
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">Seller Reviews</h2>
+                <ReviewSubmit
+                  sellerId={listing.seller._id}
+                  productId={listing._id}
+                  onReviewSubmitted={() => window.location.reload()}
+                />
+                <ReviewsList sellerId={listing.seller._id} productId={listing._id} />
+              </div>
             </div>
           </div>
         </div>

@@ -93,7 +93,7 @@ export default function FeaturedListings() {
   }
 
   return (
-    <section className="py-12 md:py-20 px-4 relative overflow-visible">
+    <section className="py-12 md:py-20 px-4 relative overflow-hidden">
       {/* Revolutionary Background */}
       <div className="absolute inset-0">
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-accent-50/40 via-transparent to-primary-50/40" />
@@ -222,7 +222,7 @@ export default function FeaturedListings() {
         </motion.div>
 
         {/* Featured Products */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {products.map((product, index) => (
             <motion.div
               key={product.id}

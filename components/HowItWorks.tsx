@@ -140,33 +140,6 @@ export default function HowItWorks() {
           ))}
         </div>
 
-        {/* Stats Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="bg-gradient-to-r from-primary-500 via-primary-600 to-secondary-500 rounded-3xl p-8 text-white mb-16"
-        >
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 text-center">
-            <div>
-              <div className="text-3xl font-bold mb-2">2M+</div>
-              <div className="text-white/80">Items Listed</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold mb-2">500K+</div>
-              <div className="text-white/80">Happy Users</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold mb-2">4.8★</div>
-              <div className="text-white/80">Average Rating</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold mb-2">99.9%</div>
-              <div className="text-white/80">Success Rate</div>
-            </div>
-          </div>
-        </motion.div>
-
         {/* CTA */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}

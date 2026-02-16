@@ -6,17 +6,10 @@ import { requireAdmin } from '@/lib/auth'
 // POST /api/admin/listings/[id]/boost - Boost or unboost a listing
 async function handler(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  admin: any,
+  context: { params: { id: string } }
 ) {
   try {
-    const admin = await requireAdmin(request as any)
-    if (!admin) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 403 }
-      )
-    }
-
     await connectDB()
 
     const body = await request.json()
@@ -29,7 +22,7 @@ async function handler(
       )
     }
 
-    const listingId = params.id
+    const listingId = context.params.id
 
     const listing = await Product.findById(listingId)
     if (!listing) {
@@ -69,4 +62,4 @@ async function handler(
   }
 }
 
-export const POST = handler
+export const POST = requireAdmin(handler)

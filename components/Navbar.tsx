@@ -19,6 +19,7 @@ interface NavbarUser {
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [isArabic, setIsArabic] = useState(false)
   const [user, setUser] = useState<NavbarUser | null>(null)
@@ -117,8 +118,40 @@ export default function Navbar() {
         >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-24 min-h-[96px]">
+          {/* Mobile Search Expandable - appears before logo when active */}
+          <AnimatePresence>
+            {isMobileSearchOpen && (
+              <motion.div
+                initial={{ width: 0, opacity: 0 }}
+                animate={{ width: '100%', opacity: 1 }}
+                exit={{ width: 0, opacity: 0 }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+                className="md:hidden absolute left-4 right-24 flex items-center"
+              >
+                <div className="relative w-full">
+                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={handleSearchKeyDown}
+                    placeholder={isArabic ? "ابحث عن أي شيء..." : "Search for anything..."}
+                    className="w-full pl-12 pr-12 py-3 rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white backdrop-blur-sm shadow-lg"
+                    autoFocus
+                  />
+                  <button
+                    onClick={() => setIsMobileSearchOpen(false)}
+                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {/* Logo */}
-          <Link href="/" className="flex items-center space-x-3">
+          <Link href="/" className={`flex items-center space-x-3 transition-opacity duration-300 ${isMobileSearchOpen ? 'md:opacity-100 opacity-0' : 'opacity-100'}`}>
             <motion.div
               whileHover={{ scale: 1.05, rotate: 2 }}
               className="text-2xl lg:text-3xl font-black leading-none tracking-tight py-2"
@@ -232,31 +265,29 @@ export default function Navbar() {
              )}
           </div>
 
-          {/* Mobile Menu Button */}
-          <button
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            {isMobileMenuOpen ? (
-              <X className="w-6 h-6" />
-            ) : (
-              <Menu className="w-6 h-6" />
-            )}
-          </button>
-        </div>
+          {/* Mobile Actions - Search Icon + Menu Button */}
+          <div className="md:hidden flex items-center space-x-2">
+            <button
+              onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
+              className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              {isMobileSearchOpen ? (
+                <X className="w-6 h-6" />
+              ) : (
+                <Search className="w-6 h-6" />
+              )}
+            </button>
 
-        {/* Mobile Search */}
-        <div className="md:hidden pb-4">
-          <div className="relative w-full">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={handleSearchKeyDown}
-              placeholder={isArabic ? "ابحث عن أي شيء..." : "Search for anything..."}
-              className="w-full pl-12 pr-4 py-3 rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white/50 backdrop-blur-sm"
-            />
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              {isMobileMenuOpen ? (
+                <X className="w-6 h-6" />
+              ) : (
+                <Menu className="w-6 h-6" />
+              )}
+            </button>
           </div>
         </div>
       </div>

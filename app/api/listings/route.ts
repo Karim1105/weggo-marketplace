@@ -102,6 +102,8 @@ export async function GET(request: NextRequest) {
       sort.price = -1
     } else if (sortBy === 'oldest') {
       sort.createdAt = 1
+    } else if (sortBy === 'rating-high') {
+      sort['seller.averageRating'] = -1
     } else {
       sort.createdAt = -1 // newest
     }

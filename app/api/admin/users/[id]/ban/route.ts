@@ -6,17 +6,10 @@ import { requireAdmin } from '@/lib/auth'
 // POST /api/admin/users/[id]/ban - Ban or unban a user
 async function handler(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  admin: any,
+  context: { params: { id: string } }
 ) {
   try {
-    const admin = await requireAdmin(request as any)
-    if (!admin) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 403 }
-      )
-    }
-
     await connectDB()
 
     const body = await request.json()
@@ -29,7 +22,7 @@ async function handler(
       )
     }
 
-    const userId = params.id
+    const userId = context.params.id
 
     const user = await User.findById(userId)
     if (!user) {
@@ -87,4 +80,4 @@ async function handler(
   }
 }
 
-export const POST = handler
+export const POST = requireAdmin(handler)

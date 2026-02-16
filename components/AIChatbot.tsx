@@ -181,7 +181,7 @@ export default function AIChatbot() {
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="fixed bottom-24 right-6 w-96 h-[600px] card-modern z-50 flex flex-col overflow-hidden"
+            className="fixed bottom-24 right-2 sm:right-6 w-[calc(100vw-1rem)] sm:w-96 max-w-[480px] h-[600px] card-modern z-50 flex flex-col overflow-hidden"
           >
             {/* Header */}
             <div className="gradient-primary p-4 text-white">

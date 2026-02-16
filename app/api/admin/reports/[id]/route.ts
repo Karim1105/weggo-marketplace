@@ -7,24 +7,17 @@ import { requireAdmin } from '@/lib/auth'
 // POST /api/admin/reports/[id] - Take action on a report
 async function handler(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  admin: any,
+  context: { params: { id: string } }
 ) {
   try {
-    const admin = await requireAdmin(request as any)
-    if (!admin) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 403 }
-      )
-    }
-
     await connectDB()
 
     const body = await request.json()
     const { action, actionTaken } = body
     // action: 'dismiss', 'delete-listing', 'warn-seller', 'resolve'
 
-    const reportId = params.id
+    const reportId = context.params.id
 
     const report = await Report.findById(reportId).populate('listing')
     if (!report) {
@@ -90,4 +83,4 @@ async function handler(
   }
 }
 
-export const POST = handler
+export const POST = requireAdmin(handler)

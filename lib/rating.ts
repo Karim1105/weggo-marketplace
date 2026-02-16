@@ -72,6 +72,18 @@ export async function updateSellerProductsRatings(sellerId: string): Promise<voi
 }
 
 /**
+ * Update seller rating in database
+ */
+export async function updateSellerRating(sellerId: string): Promise<void> {
+  const { average, count } = await calculateSellerRating(sellerId)
+
+  await User.findByIdAndUpdate(sellerId, {
+    averageRating: average,
+    ratingCount: count,
+  })
+}
+
+/**
  * Get formatted rating display (e.g., "4.5 (23 reviews)")
  */
 export function formatRating(average: number, count: number): string {

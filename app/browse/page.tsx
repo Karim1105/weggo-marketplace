@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo, Suspense } from 'react'
+import { useState, useEffect, useMemo, Suspense, useRef } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { Search, Filter, Grid, List, Package, Heart, MapPin, Clock } from 'lucide-react'
@@ -50,9 +50,11 @@ function BrowsePageInner() {
   const storeFavorites = useAppStore((s) => s.favorites)
   const addFavorite = useAppStore((s) => s.addFavorite)
   const removeFavorite = useAppStore((s) => s.removeFavorite)
+  const isUpdatingFromUrl = useRef(false)
 
   // Sync category/subcategory from URL on load and when URL changes
   useEffect(() => {
+    isUpdatingFromUrl.current = true
     const cat = searchParams.get('category') || 'all'
     const sub = searchParams.get('subcategory') || 'all'
     const loc = searchParams.get('location') || ''
@@ -61,6 +63,7 @@ function BrowsePageInner() {
     setSelectedSubcategory(sub)
     setLocationFilter(loc)
     setSearchQuery(search)
+    setTimeout(() => { isUpdatingFromUrl.current = false }, 0)
   }, [searchParams])
 
   const categories = useMemo(() => ['all', ...apiCategories.map((c) => c.id)], [])
@@ -76,90 +79,84 @@ function BrowsePageInner() {
 
   // Update URL when category/subcategory change so links are shareable
   useEffect(() => {
-    const params = new URLSearchParams(searchParams.toString())
-    if (selectedCategory === 'all') {
-      params.delete('category')
-      params.delete('subcategory')
-    } else {
-      params.set('category', selectedCategory)
-      if (selectedSubcategory === 'all') params.delete('subcategory')
-      else params.set('subcategory', selectedSubcategory)
-    }
+    // Skip URL update if we're currently syncing from URL (prevent loop)
+    if (isUpdatingFromUrl.current) return
+
+    const params = new URLSearchParams()
+    if (selectedCategory !== 'all') params.set('category', selectedCategory)
+    if (selectedSubcategory !== 'all') params.set('subcategory', selectedSubcategory)
     if (searchQuery.trim()) params.set('search', searchQuery.trim())
-    else params.delete('search')
+    if (locationFilter.trim()) params.set('location', locationFilter.trim())
+    
     const q = params.toString()
     const newUrl = q ? `?${q}` : window.location.pathname
-    if (window.location.search !== (q ? `?${q}` : '')) {
+    const currentSearch = window.location.search.startsWith('?') ? window.location.search.slice(1) : window.location.search
+    
+    if (q !== currentSearch) {
       router.replace(newUrl, { scroll: false })
     }
-  }, [selectedCategory, selectedSubcategory, searchQuery, router, searchParams])
+  }, [selectedCategory, selectedSubcategory, searchQuery, locationFilter, router])
 
   const sortOptions = [
     { value: 'newest', label: 'Newest First' },
     { value: 'oldest', label: 'Oldest First' },
     { value: 'price-low', label: 'Price: Low to High' },
     { value: 'price-high', label: 'Price: High to Low' },
+    { value: 'rating-high', label: 'Top Rated Sellers' },
   ]
 
-  const fetchWishlist = useCallback(async () => {
-    try {
-      const res = await fetch('/api/wishlist', { credentials: 'include' })
-      const data = await res.json()
-      if (data.success && Array.isArray(data.wishlist)) {
-        setFavoriteIds(new Set(data.wishlist.map((p: { _id: string }) => p._id)))
-      }
-    } catch {
-      setFavoriteIds(new Set(storeFavorites))
-    }
-  }, [storeFavorites])
+  const minPrice = priceRange[0]
+  const maxPrice = priceRange[1]
 
-  const fetchListings = useCallback(async () => {
-    setLoading(true)
-    try {
-      const params = new URLSearchParams()
-      if (selectedCategory !== 'all') params.set('category', selectedCategory)
-      if (selectedSubcategory !== 'all') params.set('subcategory', selectedSubcategory)
-      if (searchQuery.trim()) params.set('search', searchQuery.trim())
-      if (locationFilter.trim()) params.set('location', locationFilter.trim())
-      params.set('minPrice', String(priceRange[0]))
-      params.set('maxPrice', String(priceRange[1]))
-      params.set('sortBy', sortBy)
-      params.set('page', String(page))
-      params.set('limit', '20')
-      const [listingsRes, wishlistRes] = await Promise.all([
-        fetch(`/api/listings?${params}`, { credentials: 'include' }),
-        fetch('/api/wishlist', { credentials: 'include' }).catch(() => null),
-      ])
-      const data = await listingsRes.json()
-      const ids = new Set<string>(storeFavorites)
-      if (wishlistRes) {
-        const wData = await wishlistRes.json()
-        if (wData?.success && Array.isArray(wData.wishlist)) {
-          wData.wishlist.forEach((p: { _id: string }) => ids.add(p._id))
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setPage(1)
+  }, [selectedCategory, selectedSubcategory, searchQuery, locationFilter, minPrice, maxPrice, sortBy])
+
+  // Fetch listings when filters change
+  useEffect(() => {
+    const fetchListings = async () => {
+      setLoading(true)
+      try {
+        const params = new URLSearchParams()
+        if (selectedCategory !== 'all') params.set('category', selectedCategory)
+        if (selectedSubcategory !== 'all') params.set('subcategory', selectedSubcategory)
+        if (searchQuery.trim()) params.set('search', searchQuery.trim())
+        if (locationFilter.trim()) params.set('location', locationFilter.trim())
+        params.set('minPrice', String(minPrice))
+        params.set('maxPrice', String(maxPrice))
+        params.set('sortBy', sortBy)
+        params.set('page', String(page))
+        params.set('limit', '20')
+        const [listingsRes, wishlistRes] = await Promise.all([
+          fetch(`/api/listings?${params}`, { credentials: 'include' }),
+          fetch('/api/wishlist', { credentials: 'include' }).catch(() => null),
+        ])
+        const data = await listingsRes.json()
+        const ids = new Set<string>()
+        if (wishlistRes) {
+          const wData = await wishlistRes.json()
+          if (wData?.success && Array.isArray(wData.wishlist)) {
+            wData.wishlist.forEach((p: { _id: string }) => ids.add(p._id))
+          }
         }
-      }
-      setFavoriteIds(ids)
-      const payload = data.data ?? data
-      if (data.success && Array.isArray(payload?.listings)) {
-        setProducts(payload.listings.map((l: any) => mapApiListingToProduct(l, ids)))
-        setTotalPages(payload.totalPages ?? 1)
-      } else {
+        setFavoriteIds(ids)
+        const payload = data.data ?? data
+        if (data.success && Array.isArray(payload?.listings)) {
+          setProducts(payload.listings.map((l: any) => mapApiListingToProduct(l, ids)))
+          setTotalPages(payload.totalPages ?? 1)
+        } else {
+          setProducts([])
+        }
+      } catch {
         setProducts([])
+      } finally {
+        setLoading(false)
       }
-    } catch {
-      setProducts([])
-    } finally {
-      setLoading(false)
     }
-  }, [selectedCategory, selectedSubcategory, searchQuery, locationFilter, priceRange, sortBy, page, storeFavorites])
 
-  useEffect(() => {
-    fetchWishlist()
-  }, [fetchWishlist])
-
-  useEffect(() => {
     fetchListings()
-  }, [fetchListings])
+  }, [selectedCategory, selectedSubcategory, searchQuery, locationFilter, minPrice, maxPrice, sortBy, page])
 
   // Mark initial mount complete after first render
   useEffect(() => {
@@ -540,7 +537,7 @@ function BrowsePageInner() {
 
         {/* Loading */}
         {loading && displayedProducts.length === 0 && (
-          <div key="loading-skeleton" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 min-h-[400px]">
+          <div key="loading-skeleton" className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 min-h-[400px]">
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <div key={i} className="bg-gray-200 rounded-2xl h-80" />
             ))}
@@ -549,7 +546,7 @@ function BrowsePageInner() {
 
         {/* Products Grid/List */}
         {viewMode === 'grid' ? (
-          <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 ${loading && displayedProducts.length > 0 ? 'opacity-50 pointer-events-none' : ''}`}>
+          <div className={`grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 ${loading && displayedProducts.length > 0 ? 'opacity-50 pointer-events-none' : ''}`}>
             {displayedProducts.map((product, index) => (
               <motion.div
                 key={product.id}

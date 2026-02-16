@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Heart, MapPin, Clock, TrendingUp, Search, Grid, Layout, Sparkles, Star, Zap } from 'lucide-react'
+import { Heart, MapPin, Clock, TrendingUp, Search, Grid, Layout, Sparkles, Star, Zap, ChevronLeft, ChevronRight } from 'lucide-react'
 import ProductCard from './ProductCard'
 import BrowseTransition from './BrowseTransition'
 import { mapApiListingToProduct } from '@/lib/utils'
@@ -34,11 +34,33 @@ export default function PersonalizedFeed() {
   const [isLoading, setIsLoading] = useState(true)
   const [viewMode, setViewMode] = useState<'grid' | 'carousel'>('carousel')
   const [currentSlide, setCurrentSlide] = useState(0)
+  const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null)
+  const [locationPermission, setLocationPermission] = useState<'granted' | 'denied' | 'prompt'>('prompt')
+  const [slidesToShow, setSlidesToShow] = useState(4)
   const storeFavorites = useAppStore((s) => s.favorites)
   const addFavorite = useAppStore((s) => s.addFavorite)
   const removeFavorite = useAppStore((s) => s.removeFavorite)
 
-  const fetchFeed = useCallback(async () => {
+  // Handle responsive slides
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 640) {
+        setSlidesToShow(1) // Mobile: 1 item
+      } else if (window.innerWidth < 1024) {
+        setSlidesToShow(2) // Tablet: 2 items
+      } else {
+        setSlidesToShow(4) // Desktop: 4 items
+      }
+      setCurrentSlide(0) // Reset to first slide on resize
+    }
+
+    handleResize() // Set initial value
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  // Fetch all items
+  const fetchAllItems = useCallback(async () => {
     setIsLoading(true)
     try {
       const params = new URLSearchParams({ sortBy: 'newest', limit: '16', page: '1' })
@@ -65,9 +87,180 @@ export default function PersonalizedFeed() {
     }
   }, [])
 
-  useEffect(() => {
-    fetchFeed()
+  // Fetch personalized recommendations
+  const fetchRecommendations = useCallback(async () => {
+    setIsLoading(true)
+    try {
+      const [recommendationsRes, wishlistRes] = await Promise.all([
+        fetch('/api/recommendations', { credentials: 'include' }),
+        fetch('/api/wishlist', { credentials: 'include' }).catch(() => null),
+      ])
+      
+      const ids = new Set<string>()
+      if (wishlistRes?.ok) {
+        const wData = await wishlistRes.json()
+        if (wData?.success && Array.isArray(wData.wishlist)) {
+          wData.wishlist.forEach((p: { _id: string }) => ids.add(p._id))
+        }
+      }
+      
+      if (recommendationsRes.ok) {
+        const data = await recommendationsRes.json()
+        const recommendations = data.recommendations || []
+        setFavoriteIds(ids)
+        setProducts(recommendations.map((l: any) => mapApiListingToProduct(l, ids)))
+      } else {
+        // If not authenticated or no recommendations, fallback to all items
+        fetchAllItems()
+      }
+    } catch {
+      // Fallback to all items on error
+      fetchAllItems()
+    } finally {
+      setIsLoading(false)
+    }
+  }, [fetchAllItems])
+
+  // Fetch trending items
+  const fetchTrending = useCallback(async () => {
+    setIsLoading(true)
+    try {
+      const [trendingRes, wishlistRes] = await Promise.all([
+        fetch('/api/listings/trending?limit=16', { credentials: 'include' }),
+        fetch('/api/wishlist', { credentials: 'include' }).catch(() => null),
+      ])
+      
+      const ids = new Set<string>()
+      if (wishlistRes?.ok) {
+        const wData = await wishlistRes.json()
+        if (wData?.success && Array.isArray(wData.wishlist)) {
+          wData.wishlist.forEach((p: { _id: string }) => ids.add(p._id))
+        }
+      }
+      
+      if (trendingRes.ok) {
+        const data = await trendingRes.json()
+        const listings = data.data?.listings || []
+        setFavoriteIds(ids)
+        setProducts(listings.map((l: any) => mapApiListingToProduct(l, ids)))
+      } else {
+        setProducts([])
+      }
+    } catch {
+      setProducts([])
+    } finally {
+      setIsLoading(false)
+    }
   }, [])
+
+  // Fetch nearby items with location
+  const fetchNearby = useCallback(async () => {
+    if (!userLocation) {
+      // Request location permission first
+      if ('geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          async (position) => {
+            setIsLoading(true)
+            const { latitude, longitude } = position.coords
+            setUserLocation({ lat: latitude, lon: longitude })
+            setLocationPermission('granted')
+            
+            try {
+              const [nearbyRes, wishlistRes] = await Promise.all([
+                fetch(`/api/listings/nearby?lat=${latitude}&lon=${longitude}&radius=100&limit=16`, { credentials: 'include' }),
+                fetch('/api/wishlist', { credentials: 'include' }).catch(() => null),
+              ])
+              
+              const ids = new Set<string>()
+              if (wishlistRes?.ok) {
+                const wData = await wishlistRes.json()
+                if (wData?.success && Array.isArray(wData.wishlist)) {
+                  wData.wishlist.forEach((p: { _id: string }) => ids.add(p._id))
+                }
+              }
+              
+              if (nearbyRes.ok) {
+                const data = await nearbyRes.json()
+                const listings = data.data?.listings || []
+                setFavoriteIds(ids)
+                setProducts(listings.map((l: any) => mapApiListingToProduct(l, ids)))
+              } else {
+                setProducts([])
+              }
+            } catch {
+              setProducts([])
+            } finally {
+              setIsLoading(false)
+            }
+          },
+          (error) => {
+            console.error('Location permission denied:', error)
+            setLocationPermission('denied')
+            setIsLoading(false)
+            // Fallback to all items
+            alert('Location access denied. Showing all items instead.')
+            setFilter('all')
+            fetchAllItems()
+          }
+        )
+      } else {
+        alert('Geolocation is not supported by your browser.')
+        setFilter('all')
+        fetchAllItems()
+      }
+    } else {
+      // Already have location, fetch nearby
+      setIsLoading(true)
+      try {
+        const [nearbyRes, wishlistRes] = await Promise.all([
+          fetch(`/api/listings/nearby?lat=${userLocation.lat}&lon=${userLocation.lon}&radius=100&limit=16`, { credentials: 'include' }),
+          fetch('/api/wishlist', { credentials: 'include' }).catch(() => null),
+        ])
+        
+        const ids = new Set<string>()
+        if (wishlistRes?.ok) {
+          const wData = await wishlistRes.json()
+          if (wData?.success && Array.isArray(wData.wishlist)) {
+            wData.wishlist.forEach((p: { _id: string }) => ids.add(p._id))
+          }
+        }
+        
+        if (nearbyRes.ok) {
+          const data = await nearbyRes.json()
+          const listings = data.data?.listings || []
+          setFavoriteIds(ids)
+          setProducts(listings.map((l: any) => mapApiListingToProduct(l, ids)))
+        } else {
+          setProducts([])
+        }
+      } catch {
+        setProducts([])
+      } finally {
+        setIsLoading(false)
+      }
+    }
+  }, [userLocation, fetchAllItems])
+
+  // Fetch feed when filter changes
+  useEffect(() => {
+    setCurrentSlide(0) // Reset to first slide when changing filters
+    switch (filter) {
+      case 'recommended':
+        fetchRecommendations()
+        break
+      case 'trending':
+        fetchTrending()
+        break
+      case 'nearby':
+        fetchNearby()
+        break
+      case 'all':
+      default:
+        fetchAllItems()
+        break
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter])
 
   const toggleFavorite = (id: string) => {
     const product = products.find((p) => p.id === id)
@@ -122,22 +315,28 @@ export default function PersonalizedFeed() {
     }
   ]
 
-  const filteredProducts = products.filter(product => {
-    if (filter === 'all') return true
-    if (filter === 'recommended') return product.seller?.rating && product.seller.rating > 4.7
-    if (filter === 'trending') return product.postedAt.includes('hour')
-    if (filter === 'nearby') return product.location.includes('Cairo')
-    return true
-  })
+  // Use products directly - no client-side filtering needed
+  const displayProducts = products
 
-  const slidesToShow = 4
-  const totalSlides = Math.ceil(filteredProducts.length / slidesToShow)
+  const totalSlides = Math.ceil(displayProducts.length / slidesToShow)
   
-  // Ensure we show exactly 4 items in carousel view
-  const carouselProducts = filteredProducts.slice(0, 4)
+  // Get current slide products
+  const startIndex = currentSlide * slidesToShow
+  const carouselProducts = displayProducts.slice(startIndex, startIndex + slidesToShow)
+
+  // Navigation handlers
+  const nextSlide = () => {
+    const newTotalSlides = Math.ceil(displayProducts.length / slidesToShow)
+    setCurrentSlide((prev) => (prev + 1) % newTotalSlides)
+  }
+
+  const prevSlide = () => {
+    const newTotalSlides = Math.ceil(displayProducts.length / slidesToShow)
+    setCurrentSlide((prev) => (prev - 1 + newTotalSlides) % newTotalSlides)
+  }
 
   return (
-    <section className="py-20 px-4 relative overflow-visible">
+    <section className="py-20 px-4 relative overflow-hidden">
       {/* Subtle floating elements only */}
       <div className="absolute inset-0 overflow-hidden">
         <motion.div
@@ -237,7 +436,7 @@ export default function PersonalizedFeed() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.5 }}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-12"
+            className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-12"
           >
             {filters.map(({ key, label, icon: Icon, color, description }, index) => (
               <motion.button
@@ -317,7 +516,61 @@ export default function PersonalizedFeed() {
           </motion.div>
         </motion.div>
 
+        {/* Loading State */}
+        {isLoading && (
+          <div className="flex justify-center items-center py-20">
+            <div className="flex flex-col items-center space-y-4">
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                className="w-16 h-16 border-4 border-primary-200 border-t-primary-600 rounded-full"
+              />
+              <p className="text-gray-600 font-medium">
+                {filter === 'nearby' && !userLocation 
+                  ? 'Requesting location access...' 
+                  : `Loading ${filter === 'recommended' ? 'personalized' : filter} items...`}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!isLoading && displayProducts.length === 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center py-20"
+          >
+            <div className="max-w-md mx-auto">
+              <div className="w-24 h-24 bg-gradient-to-r from-primary-100 to-accent-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Search className="w-12 h-12 text-primary-600" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                No items found
+              </h3>
+              <p className="text-gray-600 mb-6">
+                {filter === 'nearby' 
+                  ? 'No items found near your location. Try increasing the search radius or browse all items.'
+                  : filter === 'recommended'
+                  ? 'Start browsing items to get personalized recommendations!'
+                  : filter === 'trending'
+                  ? 'No trending items at the moment. Check back soon!'
+                  : 'No items available right now.'}
+              </p>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setFilter('all')}
+                className="px-8 py-3 bg-gradient-to-r from-primary-500 to-accent-500 text-white rounded-xl font-semibold shadow-lg"
+              >
+                Browse All Items
+              </motion.button>
+            </div>
+          </motion.div>
+        )}
+
         {/* Revolutionary Product Display */}
+        {!isLoading && displayProducts.length > 0 && (
         <AnimatePresence mode="wait">
           {viewMode === 'carousel' ? (
             <motion.div
@@ -328,9 +581,42 @@ export default function PersonalizedFeed() {
               transition={{ duration: 0.5 }}
               className="relative"
             >
+               {/* Left Arrow */}
+               {totalSlides > 1 && (
+                 <motion.button
+                   whileHover={{ scale: 1.05 }}
+                   whileTap={{ scale: 0.95 }}
+                   onClick={prevSlide}
+                   className="absolute left-2 lg:-left-16 top-1/3 -translate-y-1/2 z-10 w-10 h-10 lg:w-14 lg:h-14 bg-white shadow-xl rounded-xl lg:rounded-2xl flex items-center justify-center text-primary-600 hover:bg-primary-50 transition-colors"
+                   aria-label="Previous slide"
+                 >
+                   <ChevronLeft className="w-5 h-5 lg:w-6 lg:h-6" />
+                 </motion.button>
+               )}
+
+               {/* Right Arrow */}
+               {totalSlides > 1 && (
+                 <motion.button
+                   whileHover={{ scale: 1.05 }}
+                   whileTap={{ scale: 0.95 }}
+                   onClick={nextSlide}
+                   className="absolute right-2 lg:-right-16 top-1/3 -translate-y-1/2 z-10 w-10 h-10 lg:w-14 lg:h-14 bg-white shadow-xl rounded-xl lg:rounded-2xl flex items-center justify-center text-primary-600 hover:bg-primary-50 transition-colors"
+                   aria-label="Next slide"
+                 >
+                   <ChevronRight className="w-5 h-5 lg:w-6 lg:h-6" />
+                 </motion.button>
+               )}
+
                {/* Carousel Container - allow floating badges to overflow */}
-               <div className="overflow-visible">
-                 <div className="flex space-x-4 pb-4 overflow-x-auto overflow-y-visible scrollbar-hide justify-center">
+               <div className="overflow-hidden px-0 lg:px-0">
+                 <motion.div
+                   key={currentSlide}
+                   initial={{ opacity: 0, x: 100 }}
+                   animate={{ opacity: 1, x: 0 }}
+                   exit={{ opacity: 0, x: -100 }}
+                   transition={{ duration: 0.3 }}
+                   className="flex space-x-4 pb-4 justify-center px-12 lg:px-0"
+                 >
                    {carouselProducts.map((product, index) => (
                      <motion.div
                        key={product.id}
@@ -338,7 +624,7 @@ export default function PersonalizedFeed() {
                        whileInView={{ opacity: 1, x: 0 }}
                        viewport={{ once: true }}
                        transition={{ delay: index * 0.1 }}
-                       className="flex-shrink-0 w-72"
+                       className="flex-shrink-0 w-full sm:w-1/2 lg:w-1/4"
                      >
                        <div className="relative group">
                          <ProductCard
@@ -349,10 +635,11 @@ export default function PersonalizedFeed() {
                        </div>
                      </motion.div>
                    ))}
-                 </div>
+                 </motion.div>
+               </div>
                  
-                 {/* Carousel Navigation */}
-                 <div className="flex justify-center mt-8 space-x-3">
+               {/* Carousel Navigation */}
+               <div className="flex justify-center mt-8 space-x-3">
                    {Array.from({ length: totalSlides }).map((_, dot) => (
                      <motion.button
                        key={dot}
@@ -367,7 +654,6 @@ export default function PersonalizedFeed() {
                      />
                    ))}
                  </div>
-               </div>
             </motion.div>
           ) : (
             <motion.div
@@ -376,9 +662,9 @@ export default function PersonalizedFeed() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -30 }}
               transition={{ duration: 0.5 }}
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
+              className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6"
             >
-              {filteredProducts.map((product, index) => (
+              {displayProducts.map((product, index) => (
                 <motion.div
                   key={product.id}
                   initial={{ opacity: 0, y: 30 }}
@@ -397,6 +683,7 @@ export default function PersonalizedFeed() {
             </motion.div>
           )}
         </AnimatePresence>
+        )}
 
         {/* Revolutionary CTA Section */}
         <motion.div

@@ -93,7 +93,7 @@ export default function Hero() {
   }
 
   return (
-    <section className="relative pt-24 md:pt-36 pb-12 md:pb-20 px-4 overflow-visible">
+    <section className="relative pt-24 md:pt-36 pb-12 md:pb-20 px-4 overflow-hidden">
       {/* Warm Intense Gradient Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-amber-100/60 via-orange-100/50 to-red-100/40" />
       <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-yellow-100/40 to-transparent" />

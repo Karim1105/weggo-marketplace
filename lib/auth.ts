@@ -65,8 +65,8 @@ export function requireAuth(handler: (req: NextRequest, user: IUser) => Promise<
   }
 }
 
-export function requireAdmin(handler: (req: NextRequest, user: IUser) => Promise<Response>) {
-  return async (req: NextRequest) => {
+export function requireAdmin(handler: (req: NextRequest, user: IUser, context?: any) => Promise<Response>) {
+  return async (req: NextRequest, context?: any) => {
     const user = await getAuthUser(req)
     if (!user) {
       return Response.json({ success: false, error: 'Unauthorized' }, { status: 401 })
@@ -74,7 +74,7 @@ export function requireAdmin(handler: (req: NextRequest, user: IUser) => Promise
     if (user.role !== 'admin') {
       return Response.json({ success: false, error: 'Forbidden' }, { status: 403 })
     }
-    return handler(req, user)
+    return handler(req, user, context)
   }
 }
 

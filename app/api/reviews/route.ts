@@ -4,7 +4,7 @@ import connectDB from '@/lib/db'
 import Review from '@/models/Review'
 import Product from '@/models/Product'
 import { requireAuth } from '@/lib/auth'
-import { updateProductRating } from '@/lib/rating'
+import { updateProductRating, updateSellerRating } from '@/lib/rating'
 
 async function handler(request: NextRequest, user: any) {
   await connectDB()
@@ -171,8 +171,9 @@ async function handler(request: NextRequest, user: any) {
     // Update product rating automatically
     try {
       await updateProductRating(productId)
+      await updateSellerRating(sellerId)
     } catch (error) {
-      console.error('Failed to update product rating:', error)
+      console.error('Failed to update ratings:', error)
       // Continue even if rating update fails
     }
 
