@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
@@ -59,6 +59,7 @@ export default function ListingDetailPage() {
   const [currentUser, setCurrentUser] = useState<{ _id: string; role?: string } | null>(null)
   const [similar, setSimilar] = useState<any[]>([])
   const [imageError, setImageError] = useState(false)
+  const wishlistFetchedFor = useRef<string | null>(null)
 
   useEffect(() => {
     fetchListing()
@@ -83,6 +84,8 @@ export default function ListingDetailPage() {
 
   useEffect(() => {
     if (!listing) return
+    if (wishlistFetchedFor.current === id) return
+    wishlistFetchedFor.current = id
     fetch('/api/wishlist', { credentials: 'include' })
       .then((r) => r.json())
       .then((d) => {

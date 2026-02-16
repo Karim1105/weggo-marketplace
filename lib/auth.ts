@@ -7,10 +7,9 @@ const JWT_SECRET = process.env.JWT_SECRET
 
 if (!JWT_SECRET) {
   if (process.env.NODE_ENV === 'production') {
-    console.warn('[AUTH] JWT_SECRET not set in production. Using fallback development secret for now. Set JWT_SECRET in Vercel environment variables for security.')
-  } else {
-    console.warn('[AUTH] Using development JWT secret. Set JWT_SECRET in .env.local for security.')
+    throw new Error('JWT_SECRET is required in production. Set it in your environment variables.')
   }
+  console.warn('[AUTH] JWT_SECRET not set. Using development fallback secret. Set JWT_SECRET in .env.local for security.')
 }
 
 const JWT_SECRET_FINAL = JWT_SECRET || 'dev-secret-do-not-use-in-production'
@@ -74,6 +73,19 @@ export function requireAdmin(handler: (req: NextRequest, user: IUser) => Promise
     }
     if (user.role !== 'admin') {
       return Response.json({ success: false, error: 'Forbidden' }, { status: 403 })
+    }
+    return handler(req, user)
+  }
+}
+
+export function requireAuthNotBanned(handler: (req: NextRequest, user: IUser) => Promise<Response>) {
+  return async (req: NextRequest) => {
+    const user = await getAuthUser(req)
+    if (!user) {
+      return Response.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
+    if ((user as any).banned) {
+      return Response.json({ success: false, error: 'Your account is banned.' }, { status: 403 })
     }
     return handler(req, user)
   }

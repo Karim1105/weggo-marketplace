@@ -39,11 +39,7 @@ export async function POST(request: NextRequest) {
     const resetLink = `${baseUrl.replace(/\/$/, '')}/reset-password?token=${token}`
 
     if (process.env.NODE_ENV === 'development') {
-      return NextResponse.json({
-        success: true,
-        message: 'If an account exists with that email, you will receive a reset link.',
-        devResetLink: resetLink,
-      })
+      console.info('[AUTH] Password reset link (dev only):', resetLink)
     }
 
     return NextResponse.json({
@@ -51,8 +47,11 @@ export async function POST(request: NextRequest) {
       message: 'If an account exists with that email, you will receive a reset link.',
     })
   } catch (error: any) {
+    const message = process.env.NODE_ENV === 'production'
+      ? 'Request failed'
+      : error.message || 'Request failed'
     return NextResponse.json(
-      { success: false, error: error.message || 'Request failed' },
+      { success: false, error: message },
       { status: 500 }
     )
   }
