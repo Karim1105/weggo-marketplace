@@ -167,8 +167,17 @@ export async function GET(request: NextRequest) {
           .lean()
       }
 
+    // Sanitize payload: limit images to first image and shorten description
+    const sanitizedListings = products.map((p: any) => {
+      const images = Array.isArray(p.images) && p.images.length ? [p.images[0]] : []
+      const description = typeof p.description === 'string' && p.description.length > 200
+        ? p.description.slice(0, 200) + '...'
+        : p.description
+      return { ...p, images, description }
+    })
+
     const resultData = {
-      listings: products,
+      listings: sanitizedListings,
       total,
       page,
       totalPages: Math.ceil(total / limit),
