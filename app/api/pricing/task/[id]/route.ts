@@ -3,10 +3,11 @@ import { getPricingJob } from '@/lib/pricingJobStore'
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const job = getPricingJob(params.id)
+    const { id } = await params
+    const job = getPricingJob(id)
 
     if (!job) {
       return NextResponse.json(

@@ -633,7 +633,7 @@ export default function AdminDashboard() {
                   } disabled:opacity-50`}
                 >
                   <Zap className="w-4 h-4" />
-                  {listing.isBoosted ? 'Unboo' : 'Boost'}
+                  {listing.isBoosted ? 'Unboost' : 'Boost'}
                 </button>
               </div>
             ))}

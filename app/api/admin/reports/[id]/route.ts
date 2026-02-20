@@ -8,16 +8,15 @@ import { requireAdmin } from '@/lib/auth'
 async function handler(
   request: NextRequest,
   admin: any,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id: reportId } = await context.params
     await connectDB()
 
     const body = await request.json()
     const { action, actionTaken } = body
     // action: 'dismiss', 'delete-listing', 'warn-seller', 'resolve'
-
-    const reportId = context.params.id
 
     const report = await Report.findById(reportId).populate('listing')
     if (!report) {

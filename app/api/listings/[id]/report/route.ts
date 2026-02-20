@@ -5,9 +5,10 @@ import { getAuthUser } from '@/lib/auth'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const user = await getAuthUser(request)
     if (!user) {
       return NextResponse.json(
@@ -28,7 +29,7 @@ export async function POST(
     }
 
     await Report.create({
-      listing: params.id,
+      listing: id,
       reporter: user._id,
       reason: reason.trim(),
     })

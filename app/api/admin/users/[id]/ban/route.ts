@@ -7,9 +7,10 @@ import { requireAdmin } from '@/lib/auth'
 async function handler(
   request: NextRequest,
   admin: any,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id: userId } = await context.params
     await connectDB()
 
     const body = await request.json()
@@ -21,8 +22,6 @@ async function handler(
         { status: 400 }
       )
     }
-
-    const userId = context.params.id
 
     const user = await User.findById(userId)
     if (!user) {

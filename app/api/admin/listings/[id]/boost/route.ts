@@ -7,9 +7,10 @@ import { requireAdmin } from '@/lib/auth'
 async function handler(
   request: NextRequest,
   admin: any,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id: listingId } = await context.params
     await connectDB()
 
     const body = await request.json()
@@ -21,8 +22,6 @@ async function handler(
         { status: 400 }
       )
     }
-
-    const listingId = context.params.id
 
     const listing = await Product.findById(listingId)
     if (!listing) {

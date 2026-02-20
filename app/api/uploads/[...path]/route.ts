@@ -12,9 +12,9 @@ const MIME_TYPES: Record<string, string> = {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { path: string[] } }
+  { params }: { params: Promise<{ path: string[] }> }
 ) {
-  const segments = params.path
+  const { path: segments } = await params
 
   // Reject path traversal attempts
   if (segments.some((s) => s === '..' || s === '.' || s.includes('\\'))) {

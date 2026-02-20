@@ -36,3 +36,6 @@ next-env.d.ts
 
 
 
+/public/uploads/listings
+/public/uploads/ids
+/.vs

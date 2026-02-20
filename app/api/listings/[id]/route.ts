@@ -8,11 +8,12 @@ import { clearCacheByPrefix } from '@/lib/cache'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     await connectDB()
-    const product = await Product.findById(params.id)
+    const product = await Product.findById(id)
       .populate('seller', 'name avatar phone location')
       .lean() as any
 
@@ -24,13 +25,13 @@ export async function GET(
     }
 
     // Increment views
-    await Product.findByIdAndUpdate(params.id, { $inc: { views: 1 } })
+    await Product.findByIdAndUpdate(id, { $inc: { views: 1 } })
 
     // Track view history if user is logged in
     const user = await getAuthUser(request)
     if (user && product?.seller?._id && String(user._id) !== String(product.seller._id)) {
       await ViewHistory.findOneAndUpdate(
-        { user: user._id, product: params.id },
+        { user: user._id, product: id },
         { viewedAt: new Date() },
         { upsert: true, new: true }
       )
@@ -75,9 +76,10 @@ export async function GET(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const user = await getAuthUser(request)
     if (!user) {
       return NextResponse.json(
@@ -87,7 +89,7 @@ export async function DELETE(
     }
 
     await connectDB()
-    const product = await Product.findById(params.id)
+    const product = await Product.findById(id)
 
     if (!product || product.status === 'deleted') {
       return NextResponse.json(
@@ -122,9 +124,10 @@ export async function DELETE(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const user = await getAuthUser(request)
     if (!user) {
       return NextResponse.json(
@@ -134,7 +137,7 @@ export async function PUT(
     }
 
     await connectDB()
-    const product = await Product.findById(params.id)
+    const product = await Product.findById(id)
 
     if (!product || product.status === 'deleted') {
       return NextResponse.json(
